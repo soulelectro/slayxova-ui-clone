@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SlayXova UI Clone</title>
+  
+  <style>
+    /* Basic Reset and Global Styles */
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background-color: #000; /* bg-black */
+      color: #fff; /* text-white */
+    }
+
+    /* Navigation Bar */
+    nav {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      background-color: #1a202c; /* bg-gray-900 */
+      display: flex;
+      justify-content: space-around;
+      padding-top: 0.75rem; /* py-3 */
+      padding-bottom: 0.75rem; /* py-3 */
+      border-top: 1px solid #2d3748; /* border-t border-gray-800 */
+      z-index: 10;
+    }
+
+    nav button {
+      color: #fff;
+      transition: color 0.3s ease; /* transition */
+    }
+
+    nav button:hover {
+      color: #a78bfa; /* hover:text-purple-400 */
+    }
+
+    nav button.bg-purple-600 {
+      background-color: #8b5cf6; /* bg-purple-600 */
+      border-radius: 9999px; /* rounded-full */
+      padding-left: 1rem; /* px-4 */
+      padding-right: 1rem; /* px-4 */
+      padding-top: 0.25rem; /* py-1 */
+      padding-bottom: 0.25rem; /* py-1 */
+      color: #fff;
+      font-size: 1.25rem; /* text-xl */
+      transition: transform 0.3s ease; /* transition-transform */
+    }
+
+    nav button.bg-purple-600:hover {
+      transform: scale(1.1); /* hover:scale-110 */
+    }
+
+    /* Main Content Area */
+    main {
+      padding-top: 1rem; /* pt-4 */
+      padding-bottom: 5rem; /* pb-20 */
+    }
+
+    /* Section Transitions */
+    .section {
+      display: none;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      padding: 1rem; /* p-4 */
+    }
+
+    .section.active {
+      display: block;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Login Section Specifics */
+    #login h1 {
+      font-size: 1.5rem; /* text-2xl */
+      font-weight: 700; /* font-bold */
+      margin-bottom: 0.5rem; /* mb-2 */
+      text-align: center; /* text-center */
+      /* animate-fade-in - would require keyframes, omitted for simplicity */
+    }
+
+    #login p {
+      margin-bottom: 1.5rem; /* mb-6 */
+      color: #9ca3af; /* text-gray-400 */
+      text-align: center; /* text-center */
+    }
+
+    #login input[type="tel"] {
+      width: 100%; /* w-full */
+      padding: 0.5rem 1rem; /* px-4 py-2 */
+      border-radius: 0.25rem; /* rounded */
+      background-color: #1f2937; /* bg-gray-800 */
+      color: #fff; /* text-white */
+      margin-bottom: 1rem; /* mb-4 */
+      outline: none; /* Remove default focus outline */
+      border: 2px solid transparent; /* initial border for focus ring */
+    }
+
+    #login input[type="tel"]:focus {
+      border-color: #a78bfa; /* focus:ring-2 ring-purple-500 */
+    }
+
+    #login button {
+      width: 100%; /* w-full */
+      padding-top: 0.5rem; /* py-2 */
+      padding-bottom: 0.5rem; /* py-2 */
+      border-radius: 0.25rem; /* rounded */
+      margin-bottom: 0.5rem; /* mb-2 */
+      transition: background-color 0.3s ease, border-color 0.3s ease; /* transition */
+    }
+
+    #login button.bg-purple-600 {
+      background-color: #8b5cf6; /* bg-purple-600 */
+      color: #fff;
+    }
+
+    #login button.bg-purple-600:hover {
+      background-color: #7c3aed; /* hover:bg-purple-700 */
+    }
+
+    #login button.bg-white {
+      background-color: #fff;
+      color: #000; /* text-black */
+    }
+
+    #login button.bg-white:hover {
+      background-color: #e5e7eb; /* hover:bg-gray-200 */
+    }
+
+    #login button.bg-gray-800 {
+      background-color: #1f2937; /* bg-gray-800 */
+      border: 1px solid #2d3748; /* border */
+      color: #fff;
+    }
+
+    #login button.bg-gray-800:hover {
+      border-color: #a78bfa; /* hover:border-purple-500 */
+    }
+
+    #login .text-gray-500 {
+      color: #6b7280; /* text-gray-500 */
+      font-size: 0.875rem; /* text-sm */
+      text-align: center; /* text-center */
+    }
+
+    #login .text-purple-400 {
+      color: #a78bfa; /* text-purple-400 */
+      text-decoration: underline;
+    }
+
+    /* Feed Section Specifics */
+    #feed h2 {
+      font-size: 1.25rem; /* text-xl */
+      font-weight: 700; /* font-bold */
+      margin-bottom: 1rem; /* mb-4 */
+    }
+
+    #feed .space-y-4 > *:not(:last-child) {
+      margin-bottom: 1rem; /* space-y-4 */
+    }
+
+    #feed .bg-gray-800 {
+      background-color: #1f2937; /* bg-gray-800 */
+      border-radius: 0.5rem; /* rounded-lg */
+      padding: 1rem; /* p-4 */
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); /* shadow */
+    }
+
+    #feed .bg-gray-800 h3 {
+      font-size: 1.125rem; /* text-lg */
+      font-weight: 600; /* font-semibold */
+    }
+
+    #feed .bg-gray-800 p {
+      color: #d1d5db; /* text-gray-300 */
+      margin-top: 0.25rem; /* mt-1 */
+    }
+
+    /* Other Sections */
+    #chat h2,
+    #upload h2,
+    #discover h2,
+    #profile h2 {
+      font-size: 1.25rem; /* text-xl */
+      font-weight: 700; /* font-bold */
+    }
+
+    #chat p,
+    #upload p,
+    #discover p,
+    #profile p {
+      color: #9ca3af; /* text-gray-400 */
+    }
+  </style>
+</head>
+
+<body class="bg-black text-white font-sans">
+  <nav>
+    <button onclick="navigate('feed')">Home</button>
+    <button onclick="navigate('chat')">Chat</button>
+    <button onclick="navigate('upload')" class="bg-purple-600">+</button>
+    <button onclick="navigate('discover')">Discover</button>
+    <button onclick="navigate('profile')">Profile</button>
+  </nav>
+
+  <main>
+    <section id="login" class="section active">
+      <h1>Welcome Back!</h1>
+      <p>Create. Connect. Earn.</p>
+      <input type="tel" placeholder="Phone number" id="phoneInput" />
+      <button onclick="loginUser()" class="bg-purple-600">Continue with Phone</button>
+      <button onclick="loginUser()" class="bg-white">Continue with Google</button>
+      <button onclick="loginUser()" class="bg-gray-800 border">Continue with Discord</button>
+      <p class="text-gray-500">Don't have an account? <a href="#" class="text-purple-400">Sign Up</a></p>
+    </section>
+
+    <section id="feed" class="section">
+      <h2>Latest Posts</h2>
+      <div class="space-y-4">
+        <div class="bg-gray-800">
+          <h3>@username</h3>
+          <p>This is a sample post. Welcome to SlayXova!</p>
+        </div>
+        <div class="bg-gray-800">
+          <h3>@anotheruser</h3>
+          <p>Loving this new app UI 💜</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="chat" class="section">
+      <h2>Chat</h2>
+      <p>Chat feature will be available after login.</p>
+    </section>
+
+    <section id="upload" class="section">
+      <h2>Upload</h2>
+      <p>Upload feature will be available after login.</p>
+    </section>
+
+    <section id="discover" class="section">
+      <h2>Discover</h2>
+      <p>Discover feature will be available after login.</p>
+    </section>
+
+    <section id="profile" class="section">
+      <h2>Profile</h2>
+      <p>Profile page will be available after login.</p>
+    </section>
+  </main>
+
+  <script>
+    let isLoggedIn = false;
+
+    function loginUser() {
+      isLoggedIn = true;
+      showSection('feed');
+    }
+
+    function navigate(sectionId) {
+      if (!isLoggedIn && sectionId !== 'login') {
+        alert('Please log in first.');
+        showSection('login');
+        return;
+      }
+      showSection(sectionId);
+    }
+
+    function showSection(id) {
+      document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+      const target = document.getElementById(id);
+      setTimeout(() => {
+        target.classList.add('active');
+      }, 50);
+    }
+  </script>
+</body>
+
+</html>
+
