@@ -99,8 +99,42 @@
   }
 }
 
-.loading-shimmer {
-  background: linear-gradient(90deg, #1a1a1a 25%, #2d2d2d 37%, #1a1a1a 63%);
-  background-size: 400% 100%;
-  animation: shimmer 1.5s ease-in-out infinite;
-}
+  .loading-shimmer {
+    background: linear-gradient(90deg, #1a1a1a 25%, #2d2d2d 37%, #1a1a1a 63%);
+    background-size: 400% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+
+  /* Reels specific styles */
+  .reels-container {
+    scroll-snap-type: y mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .reel-item {
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+
+  /* Custom video player controls */
+  .video-overlay {
+    background: linear-gradient(transparent, rgba(0,0,0,0.7));
+  }
+
+  /* Floating action buttons for reels */
+  .reel-action-btn {
+    backdrop-filter: blur(10px);
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* Audio visualization animation */
+  @keyframes audioWave {
+    0% { transform: scale(1) rotate(0deg); }
+    50% { transform: scale(1.1) rotate(180deg); }
+    100% { transform: scale(1) rotate(360deg); }
+  }
+
+  .audio-playing {
+    animation: audioWave 3s linear infinite;
+  }

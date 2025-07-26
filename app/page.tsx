@@ -6,7 +6,8 @@ import {
   Home, MessageCircle, Plus, Search, User, Camera, Video, 
   Heart, Share, Send, Settings, Bell, DollarSign, Users,
   Phone, VideoIcon, Mic, Image, Smile, MoreHorizontal,
-  Zap, Crown, Lock, Eye, Gift, Star, TrendingUp
+  Zap, Crown, Lock, Eye, Gift, Star, TrendingUp, Play,
+  Pause, Volume2, VolumeX, Repeat, Music, Bookmark
 } from 'lucide-react'
 
 // Types
@@ -61,6 +62,26 @@ interface Channel {
   category: string
 }
 
+interface Reel {
+  id: string
+  user: User
+  video: string
+  thumbnail: string
+  caption: string
+  audio: {
+    name: string
+    artist: string
+    cover: string
+  }
+  likes: number
+  comments: number
+  shares: number
+  views: number
+  hashtags: string[]
+  isLiked: boolean
+  timestamp: Date
+}
+
 export default function SlayXova() {
   const [currentTab, setCurrentTab] = useState('home')
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -70,6 +91,10 @@ export default function SlayXova() {
   const [messages, setMessages] = useState<Message[]>([])
   const [activeChat, setActiveChat] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [reels, setReels] = useState<Reel[]>([])
+  const [currentReelIndex, setCurrentReelIndex] = useState(0)
+  const [isPlaying, setIsPlaying] = useState(true)
+  const [isMuted, setIsMuted] = useState(false)
 
   // Sample data
   useEffect(() => {
@@ -120,9 +145,70 @@ export default function SlayXova() {
       }
     ]
 
+    const sampleReels: Reel[] = [
+      {
+        id: '1',
+        user: sampleUser,
+        video: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
+        thumbnail: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400',
+        caption: 'Living my best life! 🔥 Check out this amazing transformation ✨ #SlayXova #Transformation #Glow',
+        audio: {
+          name: 'Trending Sound',
+          artist: 'SlayXova Music',
+          cover: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=100'
+        },
+        likes: 25400,
+        comments: 892,
+        shares: 156,
+        views: 128500,
+        hashtags: ['SlayXova', 'Transformation', 'Glow', 'Viral'],
+        isLiked: false,
+        timestamp: new Date()
+      },
+      {
+        id: '2',
+        user: { ...sampleUser, username: 'dancequeen', displayName: 'Dance Queen 💃' },
+        video: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_2mb.mp4',
+        thumbnail: 'https://images.unsplash.com/photo-1574391884720-bbc2f89592d2?w=400',
+        caption: 'New dance trend alert! 💃 Can you do this move? Tag someone to try! #DanceChallenge #SlayXova',
+        audio: {
+          name: 'Dance Beat',
+          artist: 'TrendMusic',
+          cover: 'https://images.unsplash.com/photo-1511735111819-9a3f7709049c?w=100'
+        },
+        likes: 45200,
+        comments: 1240,
+        shares: 789,
+        views: 234600,
+        hashtags: ['DanceChallenge', 'SlayXova', 'Viral', 'Trending'],
+        isLiked: true,
+        timestamp: new Date()
+      },
+      {
+        id: '3',
+        user: { ...sampleUser, username: 'cookingpro', displayName: 'Chef Pro 👨‍🍳', isPremium: true },
+        video: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_5mb.mp4',
+        thumbnail: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400',
+        caption: '60-second pasta hack! 🍝 This will change your cooking game forever! Premium recipe in bio 🔥',
+        audio: {
+          name: 'Cooking Beats',
+          artist: 'Kitchen Vibes',
+          cover: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=100'
+        },
+        likes: 67800,
+        comments: 2156,
+        shares: 1243,
+        views: 456700,
+        hashtags: ['Cooking', 'FoodHack', 'SlayXova', 'Recipe'],
+        isLiked: false,
+        timestamp: new Date()
+      }
+    ]
+
     setUser(sampleUser)
     setPosts(samplePosts)
     setStories(sampleStories)
+    setReels(sampleReels)
   }, [])
 
   const login = () => {
@@ -480,6 +566,168 @@ export default function SlayXova() {
     </div>
   )
 
+  const renderReel = (reel: Reel, index: number) => (
+    <motion.div
+      key={reel.id}
+      className="reel-item relative h-screen w-full bg-black flex items-center justify-center"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      {/* Video Background */}
+      <div className="absolute inset-0">
+        <img
+          src={reel.thumbnail}
+          alt="Reel thumbnail"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-black bg-opacity-20"></div>
+      </div>
+
+      {/* Video Controls Overlay */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <button
+          onClick={() => setIsPlaying(!isPlaying)}
+          className="w-16 h-16 bg-black bg-opacity-50 rounded-full flex items-center justify-center backdrop-blur-sm"
+        >
+          {isPlaying ? (
+            <Pause className="w-8 h-8 text-white ml-1" />
+          ) : (
+            <Play className="w-8 h-8 text-white ml-1" />
+          )}
+        </button>
+      </div>
+
+      {/* Right Side Actions */}
+      <div className="absolute right-4 bottom-20 flex flex-col items-center space-y-6">
+        {/* User Avatar */}
+        <div className="relative">
+          <img
+            src={reel.user.avatar}
+            alt={reel.user.username}
+            className="w-12 h-12 rounded-full border-2 border-white object-cover"
+          />
+          <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-6 h-6 bg-primary-600 rounded-full flex items-center justify-center">
+            <Plus className="w-4 h-4 text-white" />
+          </div>
+        </div>
+
+        {/* Like Button */}
+        <button className="flex flex-col items-center space-y-1">
+          <div className={`reel-action-btn w-12 h-12 rounded-full flex items-center justify-center transition-all ${reel.isLiked ? 'bg-red-500 scale-110' : ''}`}>
+            <Heart className={`w-6 h-6 transition-all ${reel.isLiked ? 'text-white fill-current animate-pulse' : 'text-white'}`} />
+          </div>
+          <span className="text-white text-xs font-medium">{(reel.likes / 1000).toFixed(1)}K</span>
+        </button>
+
+        {/* Comment Button */}
+        <button className="flex flex-col items-center space-y-1">
+          <div className="reel-action-btn w-12 h-12 rounded-full flex items-center justify-center">
+            <MessageCircle className="w-6 h-6 text-white" />
+          </div>
+          <span className="text-white text-xs font-medium">{reel.comments}</span>
+        </button>
+
+        {/* Share Button */}
+        <button className="flex flex-col items-center space-y-1">
+          <div className="reel-action-btn w-12 h-12 rounded-full flex items-center justify-center">
+            <Share className="w-6 h-6 text-white" />
+          </div>
+          <span className="text-white text-xs font-medium">{reel.shares}</span>
+        </button>
+
+        {/* Bookmark Button */}
+        <button className="flex flex-col items-center space-y-1">
+          <div className="reel-action-btn w-12 h-12 rounded-full flex items-center justify-center">
+            <Bookmark className="w-6 h-6 text-white" />
+          </div>
+        </button>
+
+        {/* Audio/Music */}
+        <button className="relative">
+          <div className="w-10 h-10 rounded-lg overflow-hidden border-2 border-white">
+            <img
+              src={reel.audio.cover}
+              alt="Audio cover"
+              className={`w-full h-full object-cover ${isPlaying ? 'audio-playing' : ''}`}
+            />
+          </div>
+        </button>
+      </div>
+
+      {/* Bottom Content */}
+      <div className="absolute bottom-20 left-4 right-20 text-white">
+        {/* User Info */}
+        <div className="flex items-center space-x-3 mb-3">
+          <span className="font-semibold">@{reel.user.username}</span>
+          {reel.user.isVerified && <Star className="w-4 h-4 text-blue-400" />}
+          {reel.user.isPremium && <Crown className="w-4 h-4 text-yellow-400" />}
+          <button className="border border-white px-3 py-1 rounded text-sm font-medium">
+            Follow
+          </button>
+        </div>
+
+        {/* Caption */}
+        <p className="text-sm mb-2 leading-relaxed">
+          {reel.caption}
+        </p>
+
+        {/* Hashtags */}
+        <div className="flex flex-wrap gap-1 mb-3">
+          {reel.hashtags.map((tag, i) => (
+            <span key={i} className="text-primary-400 text-sm">#{tag}</span>
+          ))}
+        </div>
+
+        {/* Audio Info */}
+        <div className="flex items-center space-x-2">
+          <Music className="w-4 h-4 text-white" />
+          <span className="text-sm">{reel.audio.name} • {reel.audio.artist}</span>
+        </div>
+
+        {/* Views Count */}
+        <div className="mt-2">
+          <span className="text-xs text-gray-300">{(reel.views / 1000).toFixed(1)}K views</span>
+        </div>
+      </div>
+
+      {/* Top Controls */}
+      <div className="absolute top-12 right-4 flex space-x-4">
+        <button
+          onClick={() => setIsMuted(!isMuted)}
+          className="w-10 h-10 bg-black bg-opacity-50 backdrop-blur-sm rounded-full flex items-center justify-center"
+        >
+          {isMuted ? (
+            <VolumeX className="w-5 h-5 text-white" />
+          ) : (
+            <Volume2 className="w-5 h-5 text-white" />
+          )}
+        </button>
+      </div>
+    </motion.div>
+  )
+
+  const renderReels = () => (
+    <div className="h-screen overflow-hidden relative">
+      <div className="reels-container h-full overflow-y-scroll scrollbar-hide">
+        {reels.map((reel, index) => renderReel(reel, index))}
+      </div>
+      
+      {/* Navigation Dots */}
+      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 flex flex-col space-y-2">
+        {reels.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => setCurrentReelIndex(index)}
+            className={`w-1 h-8 rounded-full transition-all ${
+              currentReelIndex === index ? 'bg-white' : 'bg-white bg-opacity-50'
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  )
+
   const renderUpload = () => (
     <div className="pb-20">
       <div className="p-4">
@@ -493,10 +741,13 @@ export default function SlayXova() {
             <span className="text-xs text-gray-400">Share a moment</span>
           </button>
           
-          <button className="bg-dark-200 hover:bg-dark-300 p-6 rounded-lg text-center transition">
-            <Video className="w-8 h-8 mx-auto mb-2 text-primary-400" />
-            <span className="block text-sm font-medium">Video</span>
-            <span className="text-xs text-gray-400">Record or upload</span>
+          <button 
+            onClick={() => setCurrentTab('reels')}
+            className="bg-gradient-to-br from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 p-6 rounded-lg text-center transition transform hover:scale-105"
+          >
+            <Video className="w-8 h-8 mx-auto mb-2 text-white" />
+            <span className="block text-sm font-medium text-white">Reel</span>
+            <span className="text-xs text-pink-100">Create viral content</span>
           </button>
           
           <button className="bg-dark-200 hover:bg-dark-300 p-6 rounded-lg text-center transition">
@@ -538,9 +789,9 @@ export default function SlayXova() {
       <div className="flex justify-around items-center">
         {[
           { id: 'home', icon: Home, label: 'Home' },
-          { id: 'chat', icon: MessageCircle, label: 'Chat' },
+          { id: 'reels', icon: Video, label: 'Reels' },
           { id: 'upload', icon: Plus, label: 'Create', isSpecial: true },
-          { id: 'discover', icon: Search, label: 'Discover' },
+          { id: 'chat', icon: MessageCircle, label: 'Chat' },
           { id: 'profile', icon: User, label: 'Profile' },
         ].map((tab) => (
           <button
@@ -568,10 +819,10 @@ export default function SlayXova() {
     switch (currentTab) {
       case 'home':
         return renderHome()
+      case 'reels':
+        return renderReels()
       case 'chat':
         return renderChat()
-      case 'discover':
-        return renderDiscover()
       case 'profile':
         return renderProfile()
       case 'upload':
