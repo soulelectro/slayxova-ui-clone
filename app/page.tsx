@@ -142,6 +142,8 @@ export default function SlayXova() {
   const [beRealPosts, setBeRealPosts] = useState<BeRealPost[]>([])
   const [beRealNotification, setBeRealNotification] = useState<any>(null)
   const [integratedFeed, setIntegratedFeed] = useState<Post[]>([])
+  const [connectedAccounts, setConnectedAccounts] = useState<{[key: string]: boolean}>({})
+  const [friendRequests, setFriendRequests] = useState<{[key: string]: 'pending' | 'sent' | 'connected'}>({})
 
   // Initialize integrations (mock for now)
   const crossPlatformSearch = {
@@ -716,44 +718,157 @@ export default function SlayXova() {
         </div>
 
         {/* Search Results */}
-        {searchResults.length > 0 && (
+        {(searchResults.instagram.length > 0 || searchResults.discord.length > 0 || 
+          searchResults.snapchat.length > 0 || searchResults.whatsapp.length > 0) && (
           <div className="mb-4">
-            <h3 className="text-sm font-medium text-gray-400 mb-2">Search Results</h3>
-            <div className="space-y-2">
-              {searchResults.map((result) => (
-                <div key={result.id} className="flex items-center justify-between p-3 bg-dark-200 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <img
-                      src={result.avatar}
-                      alt={result.username}
-                      className="w-10 h-10 rounded-full object-cover"
-                    />
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <span className="font-medium">{result.displayName}</span>
-                        {result.verified && <Star className="w-3 h-3 text-blue-400" />}
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          result.platform === 'instagram' ? 'bg-pink-500' :
-                          result.platform === 'discord' ? 'bg-indigo-500' :
-                          result.platform === 'snapchat' ? 'bg-yellow-500' :
-                          'bg-green-500'
-                        }`}>
-                          {result.platform}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-400">@{result.username}</p>
-                      {result.reason && (
-                        <p className="text-xs text-gray-500">{result.reason}</p>
-                      )}
-                    </div>
-                  </div>
-                  <button className="btn-primary px-3 py-1 text-sm">
-                    <UserPlus className="w-4 h-4 mr-1" />
-                    Add
-                  </button>
+            <h3 className="text-sm font-medium text-gray-400 mb-3">
+              Search Results for "{searchQuery}"
+            </h3>
+            
+            {/* Instagram Results */}
+            {searchResults.instagram.length > 0 && (
+              <div className="mb-4">
+                <div className="flex items-center space-x-2 mb-2">
+                  <Instagram className="w-5 h-5 text-pink-500" />
+                  <span className="text-sm font-medium text-pink-500">Instagram</span>
                 </div>
-              ))}
-            </div>
+                {searchResults.instagram.map((result) => (
+                  <div key={result.id} className="flex items-center justify-between p-3 bg-dark-200 rounded-lg mb-2">
+                    <div className="flex items-center space-x-3">
+                      <img
+                        src={result.avatar}
+                        alt={result.username}
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <span className="font-medium">{result.displayName}</span>
+                          {result.verified && <Star className="w-4 h-4 text-blue-400" />}
+                        </div>
+                        <p className="text-sm text-gray-400">@{result.username}</p>
+                        <p className="text-xs text-gray-500">
+                          {result.followers?.toLocaleString()} followers • {result.posts} posts
+                        </p>
+                      </div>
+                    </div>
+                    <button className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                      Follow
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Discord Results */}
+            {searchResults.discord.length > 0 && (
+              <div className="mb-4">
+                <div className="flex items-center space-x-2 mb-2">
+                  <MessageCircle className="w-5 h-5 text-indigo-500" />
+                  <span className="text-sm font-medium text-indigo-500">Discord</span>
+                </div>
+                {searchResults.discord.map((result) => (
+                  <div key={result.id} className="flex items-center justify-between p-3 bg-dark-200 rounded-lg mb-2">
+                    <div className="flex items-center space-x-3">
+                      <div className="relative">
+                        <img
+                          src={result.avatar}
+                          alt={result.username}
+                          className="w-12 h-12 rounded-full object-cover"
+                        />
+                        <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-dark-200 ${
+                          result.status === 'online' ? 'bg-green-500' :
+                          result.status === 'away' ? 'bg-yellow-500' :
+                          result.status === 'busy' ? 'bg-red-500' : 'bg-gray-500'
+                        }`}></div>
+                      </div>
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <span className="font-medium">{result.displayName}</span>
+                          <span className="text-xs text-gray-400">#{result.username.split('#')[1]}</span>
+                        </div>
+                        <p className="text-sm text-gray-400">{result.username}</p>
+                        <p className="text-xs text-gray-500">
+                          {result.status} • {result.servers} servers
+                        </p>
+                      </div>
+                    </div>
+                    <button className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                      Add Friend
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Snapchat Results */}
+            {searchResults.snapchat.length > 0 && (
+              <div className="mb-4">
+                <div className="flex items-center space-x-2 mb-2">
+                  <Camera className="w-5 h-5 text-yellow-500" />
+                  <span className="text-sm font-medium text-yellow-500">Snapchat</span>
+                </div>
+                {searchResults.snapchat.map((result) => (
+                  <div key={result.id} className="flex items-center justify-between p-3 bg-dark-200 rounded-lg mb-2">
+                    <div className="flex items-center space-x-3">
+                      <img
+                        src={result.avatar}
+                        alt={result.username}
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <span className="font-medium">{result.displayName}</span>
+                          <span className="text-xs bg-yellow-500 text-black px-2 py-1 rounded-full font-bold">
+                            👻
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-400">@{result.username}</p>
+                        <p className="text-xs text-gray-500">
+                          {result.snapScore?.toLocaleString()} snap score • {result.streaks} streaks
+                        </p>
+                      </div>
+                    </div>
+                    <button className="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded-lg text-sm font-bold transition">
+                      Add Friend
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* WhatsApp Results */}
+            {searchResults.whatsapp.length > 0 && (
+              <div className="mb-4">
+                <div className="flex items-center space-x-2 mb-2">
+                  <Phone className="w-5 h-5 text-green-500" />
+                  <span className="text-sm font-medium text-green-500">WhatsApp</span>
+                </div>
+                {searchResults.whatsapp.map((result) => (
+                  <div key={result.id} className="flex items-center justify-between p-3 bg-dark-200 rounded-lg mb-2">
+                    <div className="flex items-center space-x-3">
+                      <img
+                        src={result.avatar}
+                        alt={result.username}
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <span className="font-medium">{result.displayName}</span>
+                          <span className="text-xs text-green-400">Online</span>
+                        </div>
+                        <p className="text-sm text-gray-400">{result.phone}</p>
+                        <p className="text-xs text-gray-500">
+                          Last seen {new Date(result.lastSeen!).toLocaleTimeString()}
+                        </p>
+                      </div>
+                    </div>
+                    <button className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                      Message
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
