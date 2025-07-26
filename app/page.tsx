@@ -8,7 +8,9 @@ import {
   Phone, VideoIcon, Mic, Image, Smile, MoreHorizontal,
   Zap, Crown, Lock, Eye, Gift, Star, TrendingUp, Play,
   Pause, Volume2, VolumeX, Repeat, Music, Bookmark, Clock,
-  MapPin, UserPlus, Shuffle, Instagram, MessageSquare, Hash
+  MapPin, UserPlus, Shuffle, Instagram, MessageSquare, Hash,
+  CreditCard, Wallet, IndianRupee, QrCode, FileText, 
+  Paperclip, Download, ArrowLeft, MoreVertical, Check, CheckCheck
 } from 'lucide-react'
 
 // Import integrations (will be initialized in useEffect)
@@ -57,8 +59,22 @@ interface Message {
   receiverId: string
   content: string
   timestamp: Date
-  type: 'text' | 'image' | 'video' | 'voice'
+  type: 'text' | 'image' | 'video' | 'voice' | 'payment' | 'file' | 'location'
   isRead: boolean
+  paymentData?: {
+    amount: number
+    currency: string
+    method: 'phonepe' | 'googlepay' | 'paytm' | 'wallet'
+    status: 'pending' | 'completed' | 'failed'
+    transactionId?: string
+  }
+  fileData?: {
+    name: string
+    size: number
+    type: string
+    url: string
+  }
+  replyTo?: string
 }
 
 interface Channel {
@@ -144,6 +160,12 @@ export default function SlayXova() {
   const [integratedFeed, setIntegratedFeed] = useState<Post[]>([])
   const [connectedAccounts, setConnectedAccounts] = useState<{[key: string]: boolean}>({})
   const [friendRequests, setFriendRequests] = useState<{[key: string]: 'pending' | 'sent' | 'connected'}>({})
+  const [activeChatUser, setActiveChatUser] = useState<CrossPlatformUser | null>(null)
+  const [chatMessages, setChatMessages] = useState<Message[]>([])
+  const [newMessage, setNewMessage] = useState('')
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [paymentAmount, setPaymentAmount] = useState('')
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'phonepe' | 'googlepay' | 'paytm' | 'wallet'>('phonepe')
 
   // Initialize integrations (mock for now)
   const crossPlatformSearch = {
@@ -422,6 +444,103 @@ export default function SlayXova() {
     }
   }
 
+  // Connect/Follow user across platforms
+  const handleConnectUser = (user: CrossPlatformUser, action: string) => {
+    setFriendRequests(prev => ({
+      ...prev,
+      [user.id]: 'sent'
+    }))
+    
+    // Simulate connection success after 2 seconds
+    setTimeout(() => {
+      setFriendRequests(prev => ({
+        ...prev,
+        [user.id]: 'connected'
+      }))
+    }, 2000)
+  }
+
+  // Start chat with user
+  const startChat = (user: CrossPlatformUser) => {
+    setActiveChatUser(user)
+    // Load sample messages
+    setChatMessages([
+      {
+        id: '1',
+        senderId: 'you',
+        receiverId: user.id,
+        content: 'Hey! Found you on SlayXova 👋',
+        timestamp: new Date(Date.now() - 300000),
+        type: 'text',
+        isRead: true
+      },
+      {
+        id: '2',
+        senderId: user.id,
+        receiverId: 'you',
+        content: 'Hey there! Great to connect across platforms! 🚀',
+        timestamp: new Date(Date.now() - 240000),
+        type: 'text',
+        isRead: true
+      }
+    ])
+  }
+
+  // Send message
+  const sendMessage = () => {
+    if (!newMessage.trim() || !activeChatUser) return
+
+    const message: Message = {
+      id: Date.now().toString(),
+      senderId: 'you',
+      receiverId: activeChatUser.id,
+      content: newMessage,
+      timestamp: new Date(),
+      type: 'text',
+      isRead: false
+    }
+
+    setChatMessages(prev => [...prev, message])
+    setNewMessage('')
+  }
+
+  // Send payment
+  const sendPayment = () => {
+    if (!paymentAmount || !activeChatUser) return
+
+    const paymentMessage: Message = {
+      id: Date.now().toString(),
+      senderId: 'you',
+      receiverId: activeChatUser.id,
+      content: `Payment sent via ${selectedPaymentMethod}`,
+      timestamp: new Date(),
+      type: 'payment',
+      isRead: false,
+      paymentData: {
+        amount: parseFloat(paymentAmount),
+        currency: 'INR',
+        method: selectedPaymentMethod,
+        status: 'pending',
+        transactionId: `TXN${Date.now()}`
+      }
+    }
+
+    setChatMessages(prev => [...prev, paymentMessage])
+    setPaymentAmount('')
+    setShowPaymentModal(false)
+
+    // Simulate payment completion
+    setTimeout(() => {
+      setChatMessages(prev => 
+        prev.map(msg => 
+          msg.id === paymentMessage.id 
+            ? { ...msg, paymentData: { ...msg.paymentData!, status: 'completed' } }
+            : msg
+        )
+      )
+    }, 3000)
+  }
+
   const login = () => {
     setIsLoggedIn(true)
     setCurrentTab('home')
@@ -692,10 +811,215 @@ export default function SlayXova() {
     </div>
   )
 
-  const renderChat = () => (
-    <div className="pb-20">
-      <div className="p-4">
-        <h2 className="text-xl font-bold mb-4">Messages</h2>
+  const renderMessage = (message: Message) => {
+    const isOwn = message.senderId === 'you'
+    
+    return (
+      <div key={message.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-4`}>
+        <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
+          isOwn ? 'bg-primary-600 text-white' : 'bg-dark-200 text-white'
+        }`}>
+          {message.type === 'payment' && message.paymentData && (
+            <div className="border-l-4 border-green-400 pl-3 mb-2">
+              <div className="flex items-center space-x-2 mb-1">
+                <IndianRupee className="w-4 h-4" />
+                <span className="font-bold">₹{message.paymentData.amount}</span>
+                <span className={`text-xs px-2 py-1 rounded-full ${
+                  message.paymentData.status === 'completed' ? 'bg-green-500' :
+                  message.paymentData.status === 'pending' ? 'bg-yellow-500' : 'bg-red-500'
+                }`}>
+                  {message.paymentData.status}
+                </span>
+              </div>
+              <div className="flex items-center space-x-2 text-xs opacity-75">
+                <Wallet className="w-3 h-3" />
+                <span>{message.paymentData.method}</span>
+                {message.paymentData.transactionId && (
+                  <span>• {message.paymentData.transactionId}</span>
+                )}
+              </div>
+            </div>
+          )}
+          
+          <p className="text-sm">{message.content}</p>
+          
+          <div className="flex items-center justify-between mt-1">
+            <span className="text-xs opacity-75">
+              {new Date(message.timestamp).toLocaleTimeString()}
+            </span>
+            {isOwn && (
+              <div className="flex items-center space-x-1">
+                {message.isRead ? (
+                  <CheckCheck className="w-3 h-3 text-blue-400" />
+                ) : (
+                  <Check className="w-3 h-3" />
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const renderIndividualChat = () => (
+    <div className="h-screen flex flex-col">
+      {/* Chat Header */}
+      <div className="flex items-center justify-between p-4 border-b border-dark-300 bg-dark-100">
+        <div className="flex items-center space-x-3">
+          <button onClick={() => setActiveChatUser(null)}>
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <img
+            src={activeChatUser?.avatar}
+            alt={activeChatUser?.displayName}
+            className="w-10 h-10 rounded-full object-cover"
+          />
+          <div>
+            <h3 className="font-semibold">{activeChatUser?.displayName}</h3>
+            <div className="flex items-center space-x-2">
+              <span className={`text-xs px-2 py-1 rounded-full ${
+                activeChatUser?.platform === 'instagram' ? 'bg-pink-500' :
+                activeChatUser?.platform === 'discord' ? 'bg-indigo-500' :
+                activeChatUser?.platform === 'snapchat' ? 'bg-yellow-500' :
+                'bg-green-500'
+              }`}>
+                {activeChatUser?.platform}
+              </span>
+              <span className="text-xs text-green-400">Online</span>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center space-x-2">
+          <button className="p-2 hover:bg-dark-200 rounded-full transition">
+            <Phone className="w-5 h-5" />
+          </button>
+          <button className="p-2 hover:bg-dark-200 rounded-full transition">
+            <VideoIcon className="w-5 h-5" />
+          </button>
+          <button className="p-2 hover:bg-dark-200 rounded-full transition">
+            <MoreVertical className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {chatMessages.map(renderMessage)}
+      </div>
+
+      {/* Message Input */}
+      <div className="p-4 border-t border-dark-300 bg-dark-100">
+        <div className="flex items-center space-x-2">
+          <button className="p-2 hover:bg-dark-200 rounded-full transition">
+            <Paperclip className="w-5 h-5" />
+          </button>
+          <button className="p-2 hover:bg-dark-200 rounded-full transition">
+            <Camera className="w-5 h-5" />
+          </button>
+          <button 
+            onClick={() => setShowPaymentModal(true)}
+            className="p-2 hover:bg-dark-200 rounded-full transition text-green-500"
+          >
+            <IndianRupee className="w-5 h-5" />
+          </button>
+          
+          <input
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+            placeholder="Type a message..."
+            className="flex-1 px-4 py-2 bg-dark-200 rounded-full outline-none focus:ring-2 ring-primary-500"
+          />
+          
+          <button 
+            onClick={sendMessage}
+            className="p-2 bg-primary-600 hover:bg-primary-700 rounded-full transition"
+          >
+            <Send className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+
+  const renderPaymentModal = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-dark-100 rounded-lg p-6 w-full max-w-md mx-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">Send Payment</h3>
+          <button onClick={() => setShowPaymentModal(false)}>
+            <MoreHorizontal className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          {/* Amount Input */}
+          <div>
+            <label className="text-sm text-gray-400 mb-2 block">Amount</label>
+            <div className="relative">
+              <IndianRupee className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="number"
+                value={paymentAmount}
+                onChange={(e) => setPaymentAmount(e.target.value)}
+                placeholder="0"
+                className="w-full pl-10 pr-4 py-3 bg-dark-200 rounded-lg outline-none focus:ring-2 ring-primary-500 text-lg"
+              />
+            </div>
+          </div>
+
+          {/* Payment Methods */}
+          <div>
+            <label className="text-sm text-gray-400 mb-2 block">Payment Method</label>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { id: 'phonepe', name: 'PhonePe', icon: '📱', color: 'bg-purple-600' },
+                { id: 'googlepay', name: 'Google Pay', icon: '💳', color: 'bg-blue-600' },
+                { id: 'paytm', name: 'Paytm', icon: '💰', color: 'bg-blue-500' },
+                { id: 'wallet', name: 'Wallet', icon: '👛', color: 'bg-green-600' }
+              ].map((method) => (
+                <button
+                  key={method.id}
+                  onClick={() => setSelectedPaymentMethod(method.id as any)}
+                  className={`p-3 rounded-lg border-2 transition ${
+                    selectedPaymentMethod === method.id
+                      ? `${method.color} border-white`
+                      : 'bg-dark-200 border-dark-300 hover:border-primary-500'
+                  }`}
+                >
+                  <div className="text-center">
+                    <div className="text-2xl mb-1">{method.icon}</div>
+                    <div className="text-sm font-medium">{method.name}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Send Button */}
+          <button
+            onClick={sendPayment}
+            disabled={!paymentAmount}
+            className="w-full btn-primary py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Send ₹{paymentAmount || '0'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+
+  const renderChat = () => {
+    if (activeChatUser) {
+      return renderIndividualChat()
+    }
+
+    return (
+      <div className="pb-20">
+        <div className="p-4">
+          <h2 className="text-xl font-bold mb-4">Messages</h2>
         
         {/* Cross-Platform Search */}
         <div className="relative mb-4">
@@ -751,9 +1075,28 @@ export default function SlayXova() {
                         </p>
                       </div>
                     </div>
-                    <button className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
-                      Follow
-                    </button>
+                                         <div className="flex space-x-2">
+                       <button 
+                         onClick={() => handleConnectUser(result, 'follow')}
+                         className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                           friendRequests[result.id] === 'connected' 
+                             ? 'bg-green-500 text-white' 
+                             : friendRequests[result.id] === 'sent'
+                             ? 'bg-gray-500 text-white'
+                             : 'bg-pink-500 hover:bg-pink-600 text-white'
+                         }`}
+                         disabled={friendRequests[result.id] === 'sent'}
+                       >
+                         {friendRequests[result.id] === 'connected' ? 'Following' :
+                          friendRequests[result.id] === 'sent' ? 'Sent' : 'Follow'}
+                       </button>
+                       <button 
+                         onClick={() => startChat(result)}
+                         className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
+                       >
+                         <MessageCircle className="w-4 h-4" />
+                       </button>
+                     </div>
                   </div>
                 ))}
               </div>
@@ -792,9 +1135,28 @@ export default function SlayXova() {
                         </p>
                       </div>
                     </div>
-                    <button className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
-                      Add Friend
-                    </button>
+                                         <div className="flex space-x-2">
+                       <button 
+                         onClick={() => handleConnectUser(result, 'add')}
+                         className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                           friendRequests[result.id] === 'connected' 
+                             ? 'bg-green-500 text-white' 
+                             : friendRequests[result.id] === 'sent'
+                             ? 'bg-gray-500 text-white'
+                             : 'bg-indigo-500 hover:bg-indigo-600 text-white'
+                         }`}
+                         disabled={friendRequests[result.id] === 'sent'}
+                       >
+                         {friendRequests[result.id] === 'connected' ? 'Friends' :
+                          friendRequests[result.id] === 'sent' ? 'Sent' : 'Add Friend'}
+                       </button>
+                       <button 
+                         onClick={() => startChat(result)}
+                         className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
+                       >
+                         <MessageCircle className="w-4 h-4" />
+                       </button>
+                     </div>
                   </div>
                 ))}
               </div>
@@ -828,9 +1190,28 @@ export default function SlayXova() {
                         </p>
                       </div>
                     </div>
-                    <button className="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded-lg text-sm font-bold transition">
-                      Add Friend
-                    </button>
+                                         <div className="flex space-x-2">
+                       <button 
+                         onClick={() => handleConnectUser(result, 'add')}
+                         className={`px-4 py-2 rounded-lg text-sm font-bold transition ${
+                           friendRequests[result.id] === 'connected' 
+                             ? 'bg-green-500 text-white' 
+                             : friendRequests[result.id] === 'sent'
+                             ? 'bg-gray-500 text-white'
+                             : 'bg-yellow-500 hover:bg-yellow-600 text-black'
+                         }`}
+                         disabled={friendRequests[result.id] === 'sent'}
+                       >
+                         {friendRequests[result.id] === 'connected' ? 'Friends' :
+                          friendRequests[result.id] === 'sent' ? 'Sent' : 'Add Friend'}
+                       </button>
+                       <button 
+                         onClick={() => startChat(result)}
+                         className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
+                       >
+                         <MessageCircle className="w-4 h-4" />
+                       </button>
+                     </div>
                   </div>
                 ))}
               </div>
@@ -862,9 +1243,13 @@ export default function SlayXova() {
                         </p>
                       </div>
                     </div>
-                    <button className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
-                      Message
-                    </button>
+                                         <button 
+                       onClick={() => startChat(result)}
+                       className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
+                     >
+                       <MessageCircle className="w-4 h-4 mr-1" />
+                       Message
+                     </button>
                   </div>
                 ))}
               </div>
@@ -1345,6 +1730,9 @@ export default function SlayXova() {
       </AnimatePresence>
       
       {renderNavigation()}
+      
+      {/* Payment Modal */}
+      {showPaymentModal && renderPaymentModal()}
     </div>
   )
 }
