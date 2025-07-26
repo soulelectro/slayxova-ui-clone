@@ -8,7 +8,7 @@ import {
   Phone, VideoIcon, Mic, Image, Smile, MoreHorizontal,
   Zap, Crown, Lock, Eye, Gift, Star, TrendingUp, Play,
   Pause, Volume2, VolumeX, Repeat, Music, Bookmark, Clock,
-  MapPin, UserPlus, Shuffle, Instagram, MessageSquare
+  MapPin, UserPlus, Shuffle, Instagram, MessageSquare, Hash
 } from 'lucide-react'
 
 // Import integrations (will be initialized in useEffect)
@@ -132,7 +132,12 @@ export default function SlayXova() {
   const [currentReelIndex, setCurrentReelIndex] = useState(0)
   const [isPlaying, setIsPlaying] = useState(true)
   const [isMuted, setIsMuted] = useState(false)
-  const [searchResults, setSearchResults] = useState<CrossPlatformUser[]>([])
+  const [searchResults, setSearchResults] = useState<{
+    instagram: CrossPlatformUser[]
+    discord: CrossPlatformUser[]
+    snapchat: CrossPlatformUser[]
+    whatsapp: CrossPlatformUser[]
+  }>({ instagram: [], discord: [], snapchat: [], whatsapp: [] })
   const [isSearching, setIsSearching] = useState(false)
   const [beRealPosts, setBeRealPosts] = useState<BeRealPost[]>([])
   const [beRealNotification, setBeRealNotification] = useState<any>(null)
@@ -140,27 +145,58 @@ export default function SlayXova() {
 
   // Initialize integrations (mock for now)
   const crossPlatformSearch = {
-    searchAllPlatforms: async (query: string) => ({
-      all: [
-        {
-          id: '1',
-          username: `${query}_ig`,
-          displayName: `${query} (Instagram)`,
-          avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150',
-          platform: 'instagram' as const,
-          verified: true,
-          followers: 25000
-        },
-        {
-          id: '2',
-          username: `${query}#1234`,
-          displayName: `${query} (Discord)`,
-          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
-          platform: 'discord' as const,
-          status: 'online'
-        }
-      ]
-    })
+    searchAllPlatforms: async (query: string) => {
+      // Simulate searching across all 4 platforms for the same user
+      const baseUser = {
+        username: query,
+        displayName: query.charAt(0).toUpperCase() + query.slice(1),
+        avatar: `https://images.unsplash.com/photo-${Math.floor(Math.random() * 10) + 1494790108750}-2616b612b786?w=150`,
+      }
+
+      return {
+        instagram: [
+          {
+            id: `ig_${query}`,
+            ...baseUser,
+            username: `${query}`,
+            platform: 'instagram' as const,
+            verified: Math.random() > 0.5,
+            followers: Math.floor(Math.random() * 100000) + 1000,
+            posts: Math.floor(Math.random() * 500) + 50
+          }
+        ],
+        discord: [
+          {
+            id: `dc_${query}`,
+            ...baseUser,
+            username: `${query}#${Math.floor(Math.random() * 9999)}`,
+            platform: 'discord' as const,
+            status: ['online', 'away', 'busy', 'offline'][Math.floor(Math.random() * 4)],
+            servers: Math.floor(Math.random() * 20) + 5
+          }
+        ],
+        snapchat: [
+          {
+            id: `snap_${query}`,
+            ...baseUser,
+            platform: 'snapchat' as const,
+            snapScore: Math.floor(Math.random() * 50000) + 10000,
+            streaks: Math.floor(Math.random() * 100) + 1
+          }
+        ],
+        whatsapp: [
+          {
+            id: `wa_${query}`,
+            ...baseUser,
+            platform: 'whatsapp' as const,
+            phone: `+1${Math.floor(Math.random() * 9000000000) + 1000000000}`,
+            lastSeen: new Date(Date.now() - Math.floor(Math.random() * 3600000)).toISOString(),
+            status: 'Available'
+          }
+        ],
+        all: []
+      }
+    }
   }
 
   const beRealAPI = {
@@ -348,17 +384,22 @@ export default function SlayXova() {
   // Cross-platform search function
   const handleCrossPlatformSearch = async (query: string) => {
     if (!query.trim()) {
-      setSearchResults([])
+      setSearchResults({ instagram: [], discord: [], snapchat: [], whatsapp: [] })
       return
     }
 
     setIsSearching(true)
     try {
       const results = await crossPlatformSearch.searchAllPlatforms(query)
-      setSearchResults(results.all)
+      setSearchResults({
+        instagram: results.instagram,
+        discord: results.discord,
+        snapchat: results.snapchat,
+        whatsapp: results.whatsapp
+      })
     } catch (error) {
       console.error('Search failed:', error)
-      setSearchResults([])
+      setSearchResults({ instagram: [], discord: [], snapchat: [], whatsapp: [] })
     } finally {
       setIsSearching(false)
     }
