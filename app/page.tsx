@@ -7,8 +7,16 @@ import {
   Heart, Share, Send, Settings, Bell, DollarSign, Users,
   Phone, VideoIcon, Mic, Image, Smile, MoreHorizontal,
   Zap, Crown, Lock, Eye, Gift, Star, TrendingUp, Play,
-  Pause, Volume2, VolumeX, Repeat, Music, Bookmark
+  Pause, Volume2, VolumeX, Repeat, Music, Bookmark, Clock,
+  MapPin, UserPlus, Shuffle, Instagram, MessageSquare
 } from 'lucide-react'
+
+// Import integrations (will be initialized in useEffect)
+// import { 
+//   CrossPlatformSearch, 
+//   BeRealAPI, 
+//   InstagramFeedIntegration 
+// } from '../lib/integrations.js'
 
 // Types
 interface User {
@@ -80,6 +88,35 @@ interface Reel {
   hashtags: string[]
   isLiked: boolean
   timestamp: Date
+  platform?: string
+}
+
+interface CrossPlatformUser {
+  id: string
+  username: string
+  displayName: string
+  avatar: string
+  platform: 'instagram' | 'discord' | 'snapchat' | 'whatsapp'
+  verified?: boolean
+  followers?: number
+  status?: string
+  phone?: string
+  snapScore?: number
+  mutualFriends?: number
+  reason?: string
+}
+
+interface BeRealPost {
+  id: string
+  user: User
+  frontCamera: string
+  backCamera: string
+  location: string
+  timestamp: Date
+  reactions: { emoji: string; count: number }[]
+  comments: any[]
+  isLate?: boolean
+  lateMinutes?: number
 }
 
 export default function SlayXova() {
@@ -95,6 +132,70 @@ export default function SlayXova() {
   const [currentReelIndex, setCurrentReelIndex] = useState(0)
   const [isPlaying, setIsPlaying] = useState(true)
   const [isMuted, setIsMuted] = useState(false)
+  const [searchResults, setSearchResults] = useState<CrossPlatformUser[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [beRealPosts, setBeRealPosts] = useState<BeRealPost[]>([])
+  const [beRealNotification, setBeRealNotification] = useState<any>(null)
+  const [integratedFeed, setIntegratedFeed] = useState<Post[]>([])
+
+  // Initialize integrations (mock for now)
+  const crossPlatformSearch = {
+    searchAllPlatforms: async (query: string) => ({
+      all: [
+        {
+          id: '1',
+          username: `${query}_ig`,
+          displayName: `${query} (Instagram)`,
+          avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150',
+          platform: 'instagram' as const,
+          verified: true,
+          followers: 25000
+        },
+        {
+          id: '2',
+          username: `${query}#1234`,
+          displayName: `${query} (Discord)`,
+          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
+          platform: 'discord' as const,
+          status: 'online'
+        }
+      ]
+    })
+  }
+
+  const beRealAPI = {
+    triggerBeRealMoment: async () => ({
+      id: Date.now(),
+      title: "⚡ Time to be Real!",
+      message: "It's time to share what you're doing right now!",
+      timestamp: new Date(),
+      timeLimit: 2 * 60 * 1000,
+      expiresAt: new Date(Date.now() + 2 * 60 * 1000)
+    })
+  }
+
+  const instagramIntegration = {
+    getIntegratedFeed: async () => [
+      {
+        id: 'ig_1',
+        user: {
+          id: 'instagram_user',
+          username: 'ig_creator',
+          displayName: 'Instagram Creator',
+          avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150',
+          isVerified: true,
+          isPremium: false
+        },
+        content: 'Amazing sunset today! 🌅 #InstagramIntegration #SlayXova',
+        image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
+        likes: 5420,
+        comments: 89,
+        shares: 23,
+        timestamp: new Date(),
+        platform: 'instagram'
+      }
+    ]
+  }
 
   // Sample data
   useEffect(() => {
@@ -205,11 +306,78 @@ export default function SlayXova() {
       }
     ]
 
+    // Sample BeReal posts
+    const sampleBeRealPosts: BeRealPost[] = [
+      {
+        id: 'br_1',
+        user: sampleUser,
+        frontCamera: 'https://images.unsplash.com/photo-1518717758536-85ae29035b6d?w=400',
+        backCamera: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400',
+        location: 'New York, NY',
+        timestamp: new Date(),
+        reactions: [
+          { emoji: '👍', count: 5 },
+          { emoji: '❤️', count: 3 },
+          { emoji: '😍', count: 2 }
+        ],
+        comments: [],
+        isLate: false
+      }
+    ]
+
     setUser(sampleUser)
     setPosts(samplePosts)
     setStories(sampleStories)
     setReels(sampleReels)
+    setBeRealPosts(sampleBeRealPosts)
+
+    // Load integrated Instagram feed
+    loadIntegratedFeed()
   }, [])
+
+  // Load integrated Instagram feed
+  const loadIntegratedFeed = async () => {
+    try {
+      const igPosts = await instagramIntegration.getIntegratedFeed()
+      setIntegratedFeed(igPosts)
+    } catch (error) {
+      console.error('Failed to load Instagram feed:', error)
+    }
+  }
+
+  // Cross-platform search function
+  const handleCrossPlatformSearch = async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([])
+      return
+    }
+
+    setIsSearching(true)
+    try {
+      const results = await crossPlatformSearch.searchAllPlatforms(query)
+      setSearchResults(results.all)
+    } catch (error) {
+      console.error('Search failed:', error)
+      setSearchResults([])
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
+  // Trigger BeReal notification
+  const triggerBeReal = async () => {
+    try {
+      const notification = await beRealAPI.triggerBeRealMoment()
+      setBeRealNotification(notification)
+      
+      // Auto-hide notification after 2 minutes
+      setTimeout(() => {
+        setBeRealNotification(null)
+      }, 2 * 60 * 1000)
+    } catch (error) {
+      console.error('BeReal trigger failed:', error)
+    }
+  }
 
   const login = () => {
     setIsLoggedIn(true)
@@ -352,10 +520,130 @@ export default function SlayXova() {
     </motion.div>
   )
 
+  const renderBeRealPost = (beReal: BeRealPost) => (
+    <div key={beReal.id} className="bg-dark-100 border border-dark-300 rounded-lg overflow-hidden mb-4">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4">
+        <div className="flex items-center space-x-3">
+          <img
+            src={beReal.user.avatar}
+            alt={beReal.user.username}
+            className="w-10 h-10 rounded-full object-cover"
+          />
+          <div>
+            <div className="flex items-center space-x-2">
+              <span className="font-semibold">{beReal.user.displayName}</span>
+              <span className="text-xs bg-yellow-500 text-black px-2 py-1 rounded-full font-bold">
+                BeReal
+              </span>
+              {beReal.isLate && (
+                <span className="text-xs text-red-400">
+                  {beReal.lateMinutes}min late
+                </span>
+              )}
+            </div>
+            <div className="flex items-center space-x-2 text-sm text-gray-400">
+              <MapPin className="w-3 h-3" />
+              <span>{beReal.location}</span>
+              <Clock className="w-3 h-3 ml-2" />
+              <span>{new Date(beReal.timestamp).toLocaleTimeString()}</span>
+            </div>
+          </div>
+        </div>
+        <button className="btn-primary px-4 py-2 text-sm" onClick={triggerBeReal}>
+          <Shuffle className="w-4 h-4 mr-1" />
+          Be Real
+        </button>
+      </div>
+
+      {/* Dual Camera View */}
+      <div className="relative">
+        <img
+          src={beReal.backCamera}
+          alt="Back camera"
+          className="w-full h-80 object-cover"
+        />
+        {/* Front camera overlay */}
+        <div className="absolute top-4 left-4 w-24 h-32 rounded-lg overflow-hidden border-2 border-white shadow-lg">
+          <img
+            src={beReal.frontCamera}
+            alt="Front camera"
+            className="w-full h-full object-cover"
+          />
+        </div>
+      </div>
+
+      {/* Reactions */}
+      <div className="flex items-center justify-between p-4">
+        <div className="flex items-center space-x-4">
+          {beReal.reactions.map((reaction, i) => (
+            <button key={i} className="flex items-center space-x-1 hover:bg-dark-200 rounded px-2 py-1 transition">
+              <span className="text-lg">{reaction.emoji}</span>
+              <span className="text-sm">{reaction.count}</span>
+            </button>
+          ))}
+          <button className="text-gray-400 hover:text-white transition">
+            <MessageSquare className="w-5 h-5" />
+          </button>
+        </div>
+        <span className="text-sm text-gray-400">
+          {new Date(beReal.timestamp).toLocaleDateString()}
+        </span>
+      </div>
+    </div>
+  )
+
   const renderHome = () => (
     <div className="pb-20">
+      {/* BeReal Notification */}
+      {beRealNotification && (
+        <motion.div
+          className="fixed top-4 left-4 right-4 z-50 bg-yellow-500 text-black p-4 rounded-lg shadow-lg"
+          initial={{ opacity: 0, y: -50 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -50 }}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-bold">{beRealNotification.title}</h3>
+              <p className="text-sm">{beRealNotification.message}</p>
+            </div>
+            <div className="text-right">
+              <div className="text-lg font-bold">⏰</div>
+              <div className="text-xs">2:00</div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {renderStories()}
+      
+      {/* BeReal Posts */}
+      {beRealPosts.length > 0 && (
+        <div className="p-4">
+          <h3 className="text-lg font-semibold mb-3 flex items-center">
+            <span className="bg-yellow-500 text-black px-2 py-1 rounded mr-2 text-sm font-bold">
+              BeReal
+            </span>
+            Recent Moments
+          </h3>
+          {beRealPosts.map(renderBeRealPost)}
+        </div>
+      )}
+
+      {/* Regular Posts */}
       <div className="space-y-4 p-4">
+        {/* Integrated Instagram Posts */}
+        {integratedFeed.map((post) => (
+          <div key={`ig-${post.id}`} className="relative">
+            {renderPost(post)}
+            <div className="absolute top-2 right-2">
+              <Instagram className="w-5 h-5 text-pink-500" />
+            </div>
+          </div>
+        ))}
+        
+        {/* Regular SlayXova Posts */}
         {posts.map(renderPost)}
       </div>
     </div>
@@ -366,17 +654,67 @@ export default function SlayXova() {
       <div className="p-4">
         <h2 className="text-xl font-bold mb-4">Messages</h2>
         
-        {/* Search */}
+        {/* Cross-Platform Search */}
         <div className="relative mb-4">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
-            placeholder="Search conversations..."
+            placeholder="Search friends across all platforms..."
             className="w-full pl-10 pr-4 py-2 bg-dark-200 rounded-lg outline-none focus:ring-2 ring-primary-500"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value)
+              handleCrossPlatformSearch(e.target.value)
+            }}
           />
+          {isSearching && (
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          )}
         </div>
+
+        {/* Search Results */}
+        {searchResults.length > 0 && (
+          <div className="mb-4">
+            <h3 className="text-sm font-medium text-gray-400 mb-2">Search Results</h3>
+            <div className="space-y-2">
+              {searchResults.map((result) => (
+                <div key={result.id} className="flex items-center justify-between p-3 bg-dark-200 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <img
+                      src={result.avatar}
+                      alt={result.username}
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <span className="font-medium">{result.displayName}</span>
+                        {result.verified && <Star className="w-3 h-3 text-blue-400" />}
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          result.platform === 'instagram' ? 'bg-pink-500' :
+                          result.platform === 'discord' ? 'bg-indigo-500' :
+                          result.platform === 'snapchat' ? 'bg-yellow-500' :
+                          'bg-green-500'
+                        }`}>
+                          {result.platform}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-400">@{result.username}</p>
+                      {result.reason && (
+                        <p className="text-xs text-gray-500">{result.reason}</p>
+                      )}
+                    </div>
+                  </div>
+                  <button className="btn-primary px-3 py-1 text-sm">
+                    <UserPlus className="w-4 h-4 mr-1" />
+                    Add
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Active Status */}
         <div className="flex items-center space-x-3 mb-4">
